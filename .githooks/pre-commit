@@ -44,11 +44,11 @@ for file in $staged; do
   [ -z "$added" ] && continue
 
   for pat in "${patterns[@]}"; do
-    if echo "$added" | grep -Eq "$pat"; then
+    if echo "$added" | grep -Eq -e "$pat"; then
       report "$file" "matched /$pat/"
     fi
   done
-  if echo "$added" | grep -Eiq "$assign_secret"; then
+  if echo "$added" | grep -Eiq -e "$assign_secret"; then
     report "$file" "looks like a secret assignment"
   fi
 done
