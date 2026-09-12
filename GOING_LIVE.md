@@ -27,43 +27,31 @@ wrangler r2 bucket create trading-bars
 wrangler d1 migrations apply trading --remote
 ```
 
-## Deploying (pick ONE path — don't run both)
+## Deploying — GitHub Actions
 
-You appear to have connected this repo to **Cloudflare's Git integration
-(Workers Builds)**. Its default deploy command is `npx wrangler deploy`, which
-fails here with *"Could not detect a directory containing static files"* — it
-runs at the **repo root**, but this is a pnpm monorepo whose Worker config lives
-in `packages/worker/wrangler.toml`, and the default build didn't install the
-workspace dependencies.
+Deployment is driven by `.github/workflows/deploy.yml`: on merge to `main` it
+runs the full check suite (lint, typecheck, tests, parity) and, only if that
+passes, applies the D1 migrations and deploys the Worker + Pages. Gating deploys
+on the tests — the parity test especially — is the reason we use Actions rather
+than Cloudflare's native Git build, which deploys whatever you push with no test
+gate.
 
-### Path A — Cloudflare Workers Builds (native; no GitHub secrets needed)
+It needs two GitHub repo secrets (Settings → Secrets and variables → Actions):
 
-In the Cloudflare dashboard for this Worker → Settings → Build:
+- `CLOUDFLARE_API_TOKEN` — scoped to Workers Scripts / D1 / R2 / Pages **Edit**
+  on your account.
+- `CLOUDFLARE_ACCOUNT_ID` — your account id.
 
-- **Root directory:** `/` (repo root — needed so the pnpm workspace installs)
-- **Build command:** `pnpm install`
-- **Deploy command:** `pnpm run deploy:worker`
-  (= `pnpm --filter @trading/worker exec wrangler deploy`, which uses the pinned
-  Wrangler and the Worker's own `wrangler.toml`)
+> **Do not also connect Cloudflare's Git integration (Workers Builds).** It runs
+> `wrangler deploy`/`versions upload` from the repo root — where there is no
+> `wrangler.toml` (it lives in `packages/worker/`) — and fails on every push, and
+> two systems deploying the same Worker fight. If it was ever connected, remove
+> it: Cloudflare dashboard → Workers & Pages → the auto-created project →
+> Settings → Build → disconnect the Git repository.
 
-Optionally prepend a migration step to the deploy command:
-`pnpm run migrate:remote && pnpm run deploy:worker`. The Worker's secrets
-(`KILL_SWITCH_TOKEN`, Alpaca keys) are set with `wrangler secret put` as below —
-they are not build settings.
-
-The Pages **dashboard** is a separate project; deploy it with
-`pnpm run deploy:dashboard` (or a second Pages build whose command is that).
-
-> If you use Path A, delete or disable `.github/workflows/deploy.yml` so the two
-> don't fight over deploys.
-
-### Path B — GitHub Actions (already in the repo)
-
-Use `.github/workflows/deploy.yml` (deploys Worker + Pages on merge to `main`,
-gated on CI). It needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as
-GitHub repo secrets (below). If you use Path B, **disconnect the Cloudflare Git
-integration** (or set its production branch to something unused) so it stops
-running `npx wrangler deploy` on every push.
+For a one-off manual deploy from your machine (Wrangler authenticated):
+`cd packages/worker && pnpm exec wrangler deploy` (and
+`pnpm exec wrangler d1 migrations apply trading --remote` for migrations).
 
 ## What you must add
 
