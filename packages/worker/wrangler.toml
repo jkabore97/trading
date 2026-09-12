@@ -27,13 +27,13 @@ STRATEGY_QTY = "10"
 LOOKBACK = "200"
 
 # ---- D1 --------------------------------------------------------------------
-# database_id must be filled in after `wrangler d1 create trading` (or by the
-# operator). See GOING_LIVE.md. Left as a placeholder because creating the D1
-# database requires the operator's Cloudflare account credentials.
+# D1 database "trading" was created during the build (see BUILD_LOG.md). If you
+# recreate it in your own account, replace database_id with the new value from
+# `wrangler d1 create trading`.
 [[d1_databases]]
 binding = "DB"
 database_name = "trading"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "ca89692a-417c-4b8e-b843-03fa82309214"
 migrations_dir = "../../migrations"
 
 # ---- R2 --------------------------------------------------------------------
