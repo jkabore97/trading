@@ -88,3 +88,72 @@ and I chose a path.
   root `prepare` script. Conservative pattern set (AWS, GitHub, Slack, OpenAI,
   PEM, Alpaca AK/PK ids, generic secret assignments). `.md`/`.example` files are
   skipped so docs can show placeholder shapes.
+
+## Phase 3 — strategy & backtest
+
+- **Placeholder strategy is SMA-crossover, target-position style.** Trivial on
+  purpose. It emits the minimal intent to move from the current position to the
+  target, so a held position produces no order — this exercises the
+  portfolio-aware path without being a "strategy". It refuses to trade on
+  misconfiguration (fast >= slow) rather than emit nonsense.
+
+- **Execution model: decide on close, fill at next open.** Removes look-ahead:
+  the decision only uses information known at the bar close; the fill happens at
+  the next bar's open. The last bar therefore never trades.
+
+- **Per-trade P&L is realised on position reductions (avg-cost).** Returns/Sharpe
+  come from the net equity curve; hit rate / avg win-loss from realised closes.
+  Total cost paid is tracked separately and always printed next to net return.
+
+- **Walk-forward is structural even though the placeholder does no fitting.** The
+  harness still tiles train/test windows and reserves a held-out tail, so the
+  discipline is in place for a real strategy. `--final` is required to touch the
+  held-out set and prints a loud banner.
+
+## Phase 4 — risk gate
+
+- **Limits are inclusive; deny-by-default on ambiguity.** Reaching a limit
+  exactly is allowed; exceeding it is denied. A missing/zero/NaN reference price
+  is a denial, not a guess.
+
+- **All logic is pure (gate.ts); the DO is a thin wrapper.** Every limit check
+  and state transform is a pure function with exhaustive unit tests. The Durable
+  Object only loads state, applies a transform, and persists — so the hard part
+  is tested without a Workers runtime.
+
+- **evaluate + reserve is one serialized DO call.** Counting an order slot
+  happens inside the same DO method as the check, so two concurrent cron ticks
+  can't both pass the orders/day limit.
+
+- **Kill switch is a manual latch that survives day rollover; loss-halt does
+  not.** A fresh trading day clears a loss halt (so the system can trade again)
+  but never clears the kill switch — that requires an explicit operator `clear`.
+
+## Phase 5/6 — worker & Alpaca
+
+- **Reconcile first; halt on mismatch; never auto-correct** (spec #5). The broker
+  is the source of truth; D1 is our belief. Any position/open-order divergence
+  halts the cycle before any trading.
+
+- **On any unexpected error, halt-safe.** The cycle's catch-all halts trading and
+  mirrors state rather than continuing. Errors never lead to more trading.
+
+- **Fake broker is the default even in "paper" mode when no Alpaca keys are
+  set.** This lets the whole loop run and log end-to-end with zero credentials.
+  Alpaca paper is used only when paper keys are present. There is no code path
+  that constructs a live broker; the adapter also refuses the live host.
+
+- **Idempotency across cron retries** relies on `asOf` being the latest bar
+  timestamp (stable within a day), not the wall clock — so the client order id is
+  identical on a retry of the same bar.
+
+## Phase 7 — dashboard & deployment
+
+- **Dashboard is static + read-only, points at the Worker via `?api=`.** No build
+  server; TypeScript compiled to a single `app.js` served by Pages. The kill
+  switch is deliberately NOT a dashboard button — it is an authenticated operator
+  endpoint. Dashboard is not in the trading path, so browser JS is acceptable
+  there (the trading path stays TypeScript/Workers only).
+
+- **CI runs the parity test both inside `pnpm test` and as an explicit named
+  step** for visibility. Deploy is a separate workflow gated on a full check job.

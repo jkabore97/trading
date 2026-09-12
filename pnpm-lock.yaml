@@ -30,6 +30,8 @@ importers:
         specifier: 3.114.15
         version: 3.114.15(@cloudflare/workers-types@4.20240925.0)
 
+  apps/dashboard: {}
+
   packages/backtest:
     dependencies:
       '@trading/core':

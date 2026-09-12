@@ -1,0 +1,11 @@
+{
+  "name": "@trading/dashboard",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
+    "deploy": "wrangler pages deploy public --project-name trading-dashboard"
+  }
+}

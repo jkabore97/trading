@@ -6,7 +6,6 @@
     { "path": "./packages/backtest" },
     { "path": "./packages/risk" },
     { "path": "./packages/broker" },
-    { "path": "./packages/worker" },
-    { "path": "./apps/dashboard" }
+    { "path": "./packages/worker" }
   ]
 }
