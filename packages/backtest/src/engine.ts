@@ -39,6 +39,8 @@ export interface EngineParams {
 /** What the strategy emitted on one cycle — the unit the parity test compares. */
 export interface CycleRecord {
   asOf: number;
+  /** The exact PortfolioState fed to the strategy this cycle (for parity checks). */
+  portfolio: PortfolioState;
   intents: Intent[];
 }
 
@@ -79,7 +81,7 @@ export function runBacktest(params: EngineParams): EngineResult {
       positions: clonePositions(positions),
     };
     const intents = strategy(market, portfolio, config);
-    cycles.push({ asOf, intents });
+    cycles.push({ asOf, portfolio, intents });
 
     // Execute at the next bar's open (no look-ahead). Last bar: no execution.
     const nextT = timeline[i + 1];

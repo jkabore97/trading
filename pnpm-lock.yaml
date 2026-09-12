@@ -59,6 +59,25 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/worker:
+    dependencies:
+      '@trading/broker':
+        specifier: workspace:*
+        version: link:../broker
+      '@trading/core':
+        specifier: workspace:*
+        version: link:../core
+      '@trading/risk':
+        specifier: workspace:*
+        version: link:../risk
+      '@trading/strategy':
+        specifier: workspace:*
+        version: link:../strategy
+    devDependencies:
+      '@trading/backtest':
+        specifier: workspace:*
+        version: link:../backtest
+
   scripts:
     dependencies:
       '@trading/core':

@@ -1,0 +1,57 @@
+name = "trading-worker"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ---- Live loop cron ---------------------------------------------------------
+# Every 30 minutes during (roughly) US market hours, Mon-Fri, in UTC.
+# 13:30-20:00 UTC ~= 09:30-16:00 ET. Daily bars only need one tick/day, but a
+# denser schedule exercises reconciliation and idempotency. Adjust as needed.
+[triggers]
+crons = ["*/30 13-20 * * 1-5"]
+
+# ---- Non-secret operator config --------------------------------------------
+# SAFETY: TRADING_MODE defaults to paper. Live additionally requires
+# LIVE_TRADING_ENABLED = "true" AND the ALPACA_LIVE_SECRET_KEY secret to be set.
+[vars]
+TRADING_MODE = "paper"
+LIVE_TRADING_ENABLED = "false"
+SYMBOLS = "AAPL,MSFT,SPY"
+MAX_POSITION_QTY = "10"
+MAX_NOTIONAL_EXPOSURE = "10000"
+MAX_DAILY_LOSS = "500"
+MAX_ORDERS_PER_DAY = "20"
+STRATEGY_FAST = "10"
+STRATEGY_SLOW = "30"
+STRATEGY_QTY = "10"
+LOOKBACK = "200"
+
+# ---- D1 --------------------------------------------------------------------
+# database_id must be filled in after `wrangler d1 create trading` (or by the
+# operator). See GOING_LIVE.md. Left as a placeholder because creating the D1
+# database requires the operator's Cloudflare account credentials.
+[[d1_databases]]
+binding = "DB"
+database_name = "trading"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "../../migrations"
+
+# ---- R2 --------------------------------------------------------------------
+[[r2_buckets]]
+binding = "BARS"
+bucket_name = "trading-bars"
+
+# ---- Durable Objects -------------------------------------------------------
+[[durable_objects.bindings]]
+name = "RISK_GATE"
+class_name = "RiskGate"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RiskGate"]
+
+# ---- Secrets (NOT set here; use `wrangler secret put`) ----------------------
+# KILL_SWITCH_TOKEN        - bearer token for /api/kill, /api/clear, /api/run
+# ALPACA_API_KEY_ID        - Alpaca paper key id (PK...)
+# ALPACA_API_SECRET_KEY    - Alpaca paper secret
+# ALPACA_LIVE_SECRET_KEY   - presence is part of the live gate (do NOT set for paper)
