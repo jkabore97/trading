@@ -9,7 +9,15 @@
 // (R2BarStore) both parse with the same function below, so a bar is a bar
 // regardless of where it is read from.
 
-import type { Bar } from './types.js';
+import type { Bar, MarketState } from './types.js';
+
+/**
+ * System-wide point-in-time lookback: how many trailing bars per symbol are kept
+ * in the MarketState handed to the strategy. Both the backtester and the live
+ * Worker use this exact value; the parity test would fail if they diverged. Must
+ * exceed the strategy's longest indicator window.
+ */
+export const DEFAULT_LOOKBACK = 200;
 
 /** Parse NDJSON text into Bars, skipping blank lines. Throws on a malformed line. */
 export function parseBarsNdjson(text: string): Bar[] {
@@ -75,4 +83,28 @@ function assertBar(obj: unknown, line: number): Bar {
 /** Bars at or before `asOf`, oldest-first — the point-in-time slice for a decision. */
 export function barsAsOf(bars: readonly Bar[], asOf: number): Bar[] {
   return bars.filter((b) => b.t <= asOf);
+}
+
+/**
+ * Build the exact MarketState the strategy sees, from full symbol histories and a
+ * decision timestamp. This is the single construction used by BOTH the backtester
+ * and the live Worker — the parity test depends on that. `lookback`, when given,
+ * keeps only the most recent N point-in-time bars per symbol (bounds live memory);
+ * both callers MUST pass the same value or parity breaks by construction.
+ */
+export function buildMarketState(
+  barsBySymbol: Record<string, readonly Bar[]>,
+  asOf: number,
+  lookback?: number,
+): MarketState {
+  const bars: Record<string, Bar[]> = {};
+  for (const symbol of Object.keys(barsBySymbol).sort()) {
+    const history = barsBySymbol[symbol] ?? [];
+    let slice = barsAsOf(history, asOf);
+    if (lookback !== undefined && slice.length > lookback) {
+      slice = slice.slice(slice.length - lookback);
+    }
+    bars[symbol] = slice;
+  }
+  return { asOf, bars };
 }
