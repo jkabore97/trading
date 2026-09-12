@@ -15,6 +15,9 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run test",
+    "migrate:remote": "pnpm --filter @trading/worker exec wrangler d1 migrations apply trading --remote",
+    "deploy:worker": "pnpm --filter @trading/worker exec wrangler deploy",
+    "deploy:dashboard": "pnpm --filter @trading/dashboard run build && pnpm --filter @trading/dashboard exec wrangler pages deploy public --project-name trading-dashboard",
     "prepare": "node ./scripts/install-git-hooks.mjs"
   },
   "devDependencies": {
