@@ -46,6 +46,44 @@ and I chose a path.
   to import from several packages at once; a single config keeps CI to one
   command and the parity test trivial to wire.
 
+## Phase 2 — ingestion, D1 schema, fake broker
+
+- **Bar storage format is NDJSON, not Parquet.** The spec allows either. NDJSON
+  is dependency-free (no parquet lib in the Worker), diff-friendly, streamable
+  and trivial to produce from any free source. R2 key convention:
+  `bars/<interval>/<SYMBOL>.ndjson`. Parse/serialize live in `@trading/core` so
+  the backtester (local files) and worker (R2) read bars identically.
+
+- **Free data source is Stooq** (end-of-day CSV, no API key). Parser is pure and
+  unit-tested. Daily bars are timestamped at a nominal 20:00 UTC close (≈16:00 ET,
+  DST ignored — daily granularity makes intraday offset irrelevant to the
+  strategy, which only sees closes).
+
+- **CI/backtests use a deterministic SYNTHETIC dataset, not a live fetch.** Two
+  reasons: (1) this build sandbox's network policy blocks stooq.com and every
+  other market-data host (only the parser could be verified here, via unit
+  tests); (2) CI must never depend on a flaky third-party host or the parity test
+  becomes non-deterministic. `scripts/gen-fixtures.ts` produces committed
+  synthetic bars; the real Stooq ingestion path remains and is unit-tested. This
+  is a genuine improvement over fetching in CI, not just a sandbox workaround.
+
+- **Survivorship bias is documented, not corrected.** Stooq's history covers
+  only currently-listed symbols. Honest research needs point-in-time index
+  membership; ingestion notes this in `scripts/ingest.ts` and the README rather
+  than silently pretending today's tickers were always the universe.
+
+- **D1 stores OUR belief; the broker is the source of truth.** `positions`,
+  `orders`, `risk_state` are mirrors. Reconciliation each cycle diffs broker vs
+  D1 and halts on mismatch (never auto-corrects). The Durable Object holds the
+  authoritative live risk counters; `risk_state` is a durable mirror for the
+  dashboard and cold-start recovery.
+
+- **Alpaca adapter is built in Phase 2 alongside the broker interface** (spec
+  lists it as Phase 6) because it belongs in `@trading/broker` and is fully
+  unit-testable with an injected `fetch` — no credentials needed to write or test
+  it. It hard-refuses the live host in its constructor; wiring it into the worker
+  is still gated behind Phase 6's mode/secret checks.
+
 - **Secret scanning via a `core.hooksPath` pre-commit hook** installed by the
   root `prepare` script. Conservative pattern set (AWS, GitHub, Slack, OpenAI,
   PEM, Alpaca AK/PK ids, generic secret assignments). `.md`/`.example` files are
