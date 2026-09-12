@@ -66,6 +66,13 @@ jobs:
       - name: Build dashboard
         run: pnpm --filter @trading/dashboard run build
 
+      # Create the Pages project on first deploy. `wrangler pages deploy` does not
+      # auto-create it in CI, so this idempotent step ensures it exists; it is a
+      # no-op (non-zero, swallowed) once the project is already there.
+      - name: Ensure Pages project exists
+        working-directory: apps/dashboard
+        run: pnpm exec wrangler pages project create trading-dashboard --production-branch main || true
+
       - name: Deploy Pages dashboard
         working-directory: apps/dashboard
-        run: pnpm exec wrangler pages deploy public --project-name trading-dashboard
+        run: pnpm exec wrangler pages deploy public --project-name trading-dashboard --branch main
