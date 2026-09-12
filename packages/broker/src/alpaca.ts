@@ -62,7 +62,10 @@ export class AlpacaBroker implements Broker {
       );
     }
     this.baseUrl = base.replace(/\/$/, '');
-    this.fetchImpl = config.fetchImpl ?? fetch;
+    // Bind the global fetch to its realm. Calling an unbound global `fetch` as a
+    // method (`this.fetchImpl(...)`) throws "Illegal invocation" in Cloudflare
+    // Workers because it loses its `this`. An injected fetch (tests) is used as-is.
+    this.fetchImpl = config.fetchImpl ?? fetch.bind(globalThis);
     this.headers = {
       'APCA-API-KEY-ID': config.keyId,
       'APCA-API-SECRET-KEY': config.secretKey,

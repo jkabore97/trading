@@ -106,4 +106,22 @@ describe('AlpacaBroker reads', () => {
     const b = new AlpacaBroker({ ...KEY, fetchImpl: fetchImpl as unknown as typeof fetch });
     expect(await b.getOrderByClientId('nope')).toBeNull();
   });
+
+  // Regression: when no fetch is injected the adapter must call the GLOBAL fetch
+  // bound to its realm. Calling an unbound global fetch as a method throws
+  // "Illegal invocation" in Cloudflare Workers; binding to globalThis prevents it.
+  it('uses the global fetch (bound) when none is injected', async () => {
+    const original = globalThis.fetch;
+    const spy = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, { cash: '1', equity: '2', trading_blocked: false }));
+    globalThis.fetch = spy as unknown as typeof fetch;
+    try {
+      const b = new AlpacaBroker(KEY); // no fetchImpl -> default global fetch
+      await expect(b.getAccount()).resolves.toEqual({ cash: 1, equity: 2, tradingBlocked: false });
+      expect(spy).toHaveBeenCalledTimes(1);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
 });
