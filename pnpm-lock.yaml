@@ -47,6 +47,12 @@ importers:
 
   packages/core: {}
 
+  packages/risk:
+    dependencies:
+      '@trading/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/strategy:
     dependencies:
       '@trading/core':

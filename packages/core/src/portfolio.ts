@@ -1,10 +1,10 @@
 // Pure portfolio math shared by the risk gate, backtester and worker.
 
-import type { Bar, Intent, PortfolioState, Position } from './types.js';
+import type { Bar, PortfolioState, Position, Side } from './types.js';
 
-/** Signed quantity delta an intent would apply to a position. */
-export function intentQtyDelta(intent: Intent): number {
-  return intent.side === 'buy' ? intent.qty : -intent.qty;
+/** Signed quantity delta a buy/sell of `qty` would apply to a position. */
+export function intentQtyDelta(order: { side: Side; qty: number }): number {
+  return order.side === 'buy' ? order.qty : -order.qty;
 }
 
 /** Latest known close for a symbol from a bar list (oldest-first). */
