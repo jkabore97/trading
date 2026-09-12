@@ -1,0 +1,16 @@
+{
+  "name": "@trading/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --build",
+    "ingest": "tsx ./ingest.ts",
+    "gen:fixtures": "tsx ./gen-fixtures.ts",
+    "migrate:local": "wrangler d1 migrations apply trading --local --config ../packages/worker/wrangler.toml",
+    "migrate:remote": "wrangler d1 migrations apply trading --remote --config ../packages/worker/wrangler.toml"
+  },
+  "dependencies": {
+    "@trading/core": "workspace:*"
+  }
+}

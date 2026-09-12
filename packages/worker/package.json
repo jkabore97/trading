@@ -1,0 +1,21 @@
+{
+  "name": "@trading/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --build",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@trading/broker": "workspace:*",
+    "@trading/core": "workspace:*",
+    "@trading/risk": "workspace:*",
+    "@trading/strategy": "workspace:*"
+  },
+  "devDependencies": {
+    "@trading/backtest": "workspace:*"
+  }
+}

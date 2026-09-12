@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  pull_request:
+  # Run on every branch push too, so CI is exercised for real on feature branches
+  # (not only on PRs / main). Concurrency below dedups PR + push on the same ref.
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: typecheck / lint / test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (Biome)
+        run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Unit tests + parity test
+        run: pnpm test
+
+      - name: Parity test (explicit — the most important test)
+        run: pnpm exec vitest run packages/worker/src/parity.test.ts
+
+      - name: Build dashboard
+        run: pnpm --filter @trading/dashboard run build

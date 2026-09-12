@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+*.tsbuildinfo
+apps/dashboard/public/app.js
+
+# cloudflare / wrangler
+.wrangler/
+.dev.vars
+.dev.vars.*
+wrangler.local.toml
+
+# secrets (belt and braces — see also .githooks/pre-commit)
+*.pem
+.env
+.env.*
+!.env.example
+secrets.json
+
+# local data
+/tmp-data/
+*.local.ndjson
+
+# editor / os
+.DS_Store
+.idea/
+.vscode/
+coverage/

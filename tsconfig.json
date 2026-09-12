@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/strategy" },
+    { "path": "./packages/backtest" },
+    { "path": "./packages/risk" },
+    { "path": "./packages/broker" },
+    { "path": "./packages/worker" }
+  ]
+}

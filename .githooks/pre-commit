@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Pre-commit hook: refuse to commit anything that looks like a secret.
+#
+# This is safety requirement #6 (no secrets in the repo). It is intentionally
+# conservative: false positives are annoying, a leaked key is a disaster. To
+# bypass in a genuine false-positive, use `git commit --no-verify` and think hard.
+set -euo pipefail
+
+# Only scan staged, added/changed content of text files.
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+fail=0
+report() {
+  echo "pre-commit: possible secret in $1: $2" >&2
+  fail=1
+}
+
+# Patterns for common credential shapes. Extend as needed.
+declare -a patterns=(
+  'AKIA[0-9A-Z]{16}'                              # AWS access key id
+  'ASIA[0-9A-Z]{16}'                              # AWS temp key id
+  'sk-[A-Za-z0-9]{20,}'                           # OpenAI-style secret key
+  'xox[baprs]-[A-Za-z0-9-]{10,}'                  # Slack token
+  'gh[pousr]_[A-Za-z0-9]{20,}'                    # GitHub token
+  '-----BEGIN[A-Z ]*PRIVATE KEY-----'             # PEM private key
+  'AK[A-Z0-9]{18}'                                # Alpaca key id (AK...)
+  'PK[A-Z0-9]{18}'                                # Alpaca paper key id (PK...)
+)
+
+# Alpaca secret keys are 40-char base64-ish blobs assigned to APCA_API_SECRET_KEY.
+# Flag any assignment of a long opaque value to a *secret*/*token*/*key* name.
+assign_secret='(SECRET|TOKEN|PASSWORD|APCA_API_SECRET_KEY)[A-Z_]*\s*[:=]\s*['"'"'"]?[A-Za-z0-9/+_-]{20,}'
+
+for file in $staged; do
+  # Skip binary files and known-safe example files.
+  case "$file" in
+    *.png|*.jpg|*.jpeg|*.gif|*.ico|*.pdf|*.lock) continue ;;
+    *.example|*.md) continue ;;
+  esac
+  [ -f "$file" ] || continue
+
+  added=$(git diff --cached -U0 -- "$file" | grep '^+' | grep -v '^+++' || true)
+  [ -z "$added" ] && continue
+
+  for pat in "${patterns[@]}"; do
+    if echo "$added" | grep -Eq -e "$pat"; then
+      report "$file" "matched /$pat/"
+    fi
+  done
+  if echo "$added" | grep -Eiq -e "$assign_secret"; then
+    report "$file" "looks like a secret assignment"
+  fi
+done
+
+if [ "$fail" -ne 0 ]; then
+  echo "pre-commit: commit blocked. Remove the secret, or use Wrangler/GitHub secrets." >&2
+  echo "pre-commit: if this is a false positive, re-run with --no-verify." >&2
+  exit 1
+fi
+exit 0

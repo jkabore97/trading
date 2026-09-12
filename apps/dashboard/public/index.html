@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trading — read-only dashboard</title>
+    <style>
+      :root { color-scheme: light dark; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      body { margin: 0; padding: 16px; max-width: 1000px; margin-inline: auto; }
+      h1 { font-size: 18px; }
+      .muted { opacity: 0.6; }
+      .banner { padding: 10px 14px; border-radius: 8px; font-weight: 700; margin: 12px 0; }
+      .banner.ok { background: #123f1f; color: #7ef0a5; }
+      .banner.halt { background: #4a3a12; color: #ffd35c; }
+      .banner.kill { background: #4a1212; color: #ff8a8a; }
+      #risk { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+      #risk div { background: rgba(127,127,127,0.1); padding: 8px 10px; border-radius: 6px; }
+      #risk span { display: block; font-size: 11px; opacity: 0.6; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid rgba(127,127,127,0.2); }
+      td.detail { font-size: 11px; opacity: 0.8; }
+      tr.s-halted td, tr.s-error td { color: #ff8a8a; }
+      button { font: inherit; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+      section { margin-top: 20px; }
+      .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <h1>Trading — read-only dashboard</h1>
+      <button id="refresh">Refresh</button>
+    </div>
+    <p id="status" class="muted">…</p>
+    <div id="banner" class="banner">…</div>
+
+    <section>
+      <h2>Risk state</h2>
+      <div id="risk"></div>
+    </section>
+
+    <section>
+      <h2>Positions</h2>
+      <div id="positions"></div>
+    </section>
+
+    <section>
+      <h2>Recent cycles</h2>
+      <div id="cycles"></div>
+    </section>
+
+    <p class="muted">
+      Read-only. The kill switch is an authenticated operator endpoint, not a button here.
+    </p>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
